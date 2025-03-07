@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""
+Application: Code Transformer
+
+This application processes source code from various programming languages (Java, Python, Node.js, etc.) and structures it in a format optimized for automatic readers.
+
+Features:
+- Extracts code from its original files, preserving the directory structure including packages and accompanying files.
+- Formats output such that each file is clearly labeled with its relative file path and the content is provided in a structured format.
+- Designed to work with a variety of languages including Java, Python, and Node.js.
+
+Usage:
+    python3 code_transformer.py [source_directory] [output_file]
+
+    - If source_directory is not provided, the current directory is used.
+    - If output_file is not provided, 'structured_output.txt' is used as the default output file.
+
+Example Output for a Java file:
+
+    File Path: src/main/java/Location.java
+    Content:
+    
+    package com.securitas.model;
+    
+    import lombok.Data;
+    import java.time.LocalDateTime;
+    
+    @Data
+    public class Location {
+        private Long id;
+        private String name;
+        private String type;
+        private String address;
+        private LocalDateTime createdAt;
+    }
+
+The output file will include such details for every source file found in the directory tree.
+"""
+
+import os
+import sys
+
+def process_files(source_dir, output_file):
+    """
+    Recursively processes source files from the source_dir and writes the structured output to output_file.
+    """
+    # Allowed file extensions for common programming languages
+    allowed_extensions = {'.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.c', '.cpp', '.cs', '.rb', '.go', '.php'}
+
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        for root, dirs, files in os.walk(source_dir):
+            # Sort files for consistency
+            files.sort()
+            for file in files:
+                file_path = os.path.join(root, file)
+                _, ext = os.path.splitext(file)
+                # Check if file extension is allowed or if it's a file that likely contains source code
+                if ext.lower() in allowed_extensions or file.lower() in ['makefile', 'dockerfile']:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as infile:
+                            content = infile.read()
+                    except Exception as e:
+                        content = f"Error reading file: {e}"
+                    # Write file header and content to output
+                    rel_path = os.path.relpath(file_path, source_dir)
+                    outfile.write(f"File Path: {rel_path}\n")
+                    outfile.write("Content:\n")
+                    outfile.write(content + "\n")
+                    outfile.write("\n" + "-"*80 + "\n\n")
+
+def main():
+    if len(sys.argv) > 1:
+        source_dir = sys.argv[1]
+    else:
+        source_dir = '.'
+
+    if len(sys.argv) > 2:
+        output_file = sys.argv[2]
+    else:
+        output_file = 'structured_output.txt'
+
+    print(f"Processing source files from: {source_dir}")
+    print(f"Output will be written to: {output_file}")
+
+    process_files(source_dir, output_file)
+    print("Processing complete.")
+
+if __name__ == '__main__':
+    main()
