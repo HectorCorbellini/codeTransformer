@@ -39,6 +39,21 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+# Constants for directory tree building
+EXCLUDED_DIRS = ['.git', 'node_modules', '__pycache__', '.idea', '.vscode']
+EXCLUDED_GIT_DIRS = ['objects', 'hooks', 'logs', 'refs']
+BASE_DIR_PREFIX = "└── "
+EXTENSION_PREFIX = "    "
+TREE_SEPARATOR = "\n"
+
+# Constants for file processing
+ALLOWED_EXTENSIONS = {'.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.c', '.cpp', '.cs', '.rb', '.go', '.php'}
+OUTPUT_FILE_DEFAULT = "structured-output.txt"
+DIRECTORY_STRUCTURE_HEADER = "Directory Structure:"
+OUTPUT_SEPARATOR = "="*80
+FILE_HEADER_TEMPLATE = "File Path: {}\nContent:\n{}\n\n"
+FILE_SEPARATOR = "-"*80
+
 def build_directory_tree(root_dir):
     """
     Recursively builds a directory tree diagram as a string starting from root_dir.
@@ -47,10 +62,6 @@ def build_directory_tree(root_dir):
     tree_lines = []
     base = os.path.basename(os.path.normpath(root_dir))
     tree_lines.append(base)
-
-    # Directories and files to exclude from the tree
-    excluded_dirs = ['.git', 'node_modules', '__pycache__', '.idea', '.vscode']
-    excluded_git_dirs = ['objects', 'hooks', 'logs', 'refs']
 
     def _build_tree(dir_path, prefix=""):
         try:
@@ -62,13 +73,13 @@ def build_directory_tree(root_dir):
         filtered_entries = []
         for entry in entries:
             # Skip excluded directories
-            if entry in excluded_dirs:
+            if entry in EXCLUDED_DIRS:
                 continue
                 
             full_path = os.path.join(dir_path, entry)
             
             # Skip Git internal directories
-            if os.path.basename(os.path.dirname(full_path)) == '.git' and entry in excluded_git_dirs:
+            if os.path.basename(os.path.dirname(full_path)) == '.git' and entry in EXCLUDED_GIT_DIRS:
                 continue
                 
             # Skip Git object files (which are typically named with hex characters)
@@ -82,8 +93,8 @@ def build_directory_tree(root_dir):
             full_path = os.path.join(dir_path, entry)
             is_last = (idx == entries_count - 1)
             if is_last:
-                tree_lines.append(prefix + "└── " + entry)
-                extension_prefix = prefix + "    "
+                tree_lines.append(prefix + BASE_DIR_PREFIX + entry)
+                extension_prefix = prefix + EXTENSION_PREFIX
             else:
                 tree_lines.append(prefix + "├── " + entry)
                 extension_prefix = prefix + "│   "
@@ -91,22 +102,19 @@ def build_directory_tree(root_dir):
                 _build_tree(full_path, extension_prefix)
     
     _build_tree(root_dir)
-    return "\n".join(tree_lines)
+    return TREE_SEPARATOR.join(tree_lines)
 
 
 def process_files(source_dir, output_file):
     """
     Recursively processes source files from the source_dir, writes a directory tree diagram, and then writes the file details to output_file.
     """
-    # Allowed file extensions for common programming languages
-    allowed_extensions = {'.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.c', '.cpp', '.cs', '.rb', '.go', '.php'}
-
     with open(output_file, 'w', encoding='utf-8') as outfile:
         # Write the directory tree diagram at the top
         tree_diagram = build_directory_tree(source_dir)
-        outfile.write("Directory Structure:\n")
+        outfile.write(DIRECTORY_STRUCTURE_HEADER + "\n")
         outfile.write(tree_diagram + "\n")
-        outfile.write("\n" + "="*80 + "\n\n")
+        outfile.write("\n" + OUTPUT_SEPARATOR + "\n\n")
         
         # Directories to exclude when processing files
         excluded_dirs = ['.git', 'node_modules', '__pycache__', '.idea', '.vscode']
@@ -123,7 +131,7 @@ def process_files(source_dir, output_file):
                 file_path = os.path.join(root, file)
                 _, ext = os.path.splitext(file)
                 # Check if file extension is allowed or if it's a file that likely contains source code
-                if ext.lower() in allowed_extensions or file.lower() in ['makefile', 'dockerfile']:
+                if ext.lower() in ALLOWED_EXTENSIONS or file.lower() in ['makefile', 'dockerfile']:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as infile:
                             content = infile.read()
@@ -131,12 +139,13 @@ def process_files(source_dir, output_file):
                         content = f"Error reading file: {e}"
                     # Write file header and content to output
                     rel_path = os.path.relpath(file_path, source_dir)
-                    file_output = f"File Path: {rel_path}\nContent:\n{content}\n\n{'-'*80}\n\n"
+                    file_output = FILE_HEADER_TEMPLATE.format(rel_path, content)
                     output_content.append(file_output)
                     outfile.write(file_output)
+                    outfile.write(FILE_SEPARATOR + "\n\n")
         
         # Copy the complete output to clipboard
-        complete_output = tree_diagram + "\n\n" + "="*80 + "\n\n" + "".join(output_content)
+        complete_output = tree_diagram + "\n\n" + OUTPUT_SEPARATOR + "\n\n" + "".join(output_content)
         root = tk.Tk()
         root.withdraw()  # Hide the root window
         root.clipboard_clear()
@@ -154,7 +163,7 @@ def run_gui():
     frame.pack()
 
     source_dir = tk.StringVar()
-    output_file = tk.StringVar(value="structured-output.txt")
+    output_file = tk.StringVar(value=OUTPUT_FILE_DEFAULT)
 
     def browse_directory():
         directory = filedialog.askdirectory(title="Select Project Directory")
