@@ -154,7 +154,7 @@ def run_gui():
     frame.pack()
 
     source_dir = tk.StringVar()
-    output_file = tk.StringVar(value="structured_output.txt")
+    output_file = tk.StringVar(value="structured-output.txt")
 
     def browse_directory():
         directory = filedialog.askdirectory(title="Select Project Directory")
