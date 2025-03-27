@@ -9,59 +9,34 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Implementation of DirectoryProcessorService.
- * Follows Single Responsibility Principle and maintains high cohesion.
+ * Implementation of the DirectoryProcessorService interface.
+ * Responsible for processing directories and transforming their contents.
+ * This implementation follows the same successful pattern from the reference project.
  */
-public class DirectoryProcessor implements DirectoryProcessorService {
-    private static final Logger LOGGER = Logger.getLogger(DirectoryProcessor.class.getName());
+public class DirectoryProcessorServiceImpl implements DirectoryProcessorService {
     private static final String LINE_SEPARATOR = System.lineSeparator();
     private static final String FILE_SEPARATOR = "=".repeat(80) + LINE_SEPARATOR;
     
-    // Counter for total files processed
-    // File service dependency
+    // Use the FileService interface for file operations
     private final FileService fileService;
     
-    // Processing statistics
-    private static class ProcessingStats {
-        private int totalFilesProcessed;
-        private final Path sourceDir;
-        
-        ProcessingStats(Path sourceDir) {
-            this.sourceDir = sourceDir;
-            this.totalFilesProcessed = 0;
-        }
-        
-        void incrementFilesProcessed() {
-            totalFilesProcessed++;
-        }
-        
-        int getTotalFilesProcessed() {
-            return totalFilesProcessed;
-        }
-        
-        Path getSourceDir() {
-            return sourceDir;
-        }
-    }
-
     /**
-     * Creates a new DirectoryProcessor with the default file service.
+     * Constructs a new DirectoryProcessorServiceImpl instance.
      */
-    public DirectoryProcessor() {
-        this(FileUtils.getInstance());
+    public DirectoryProcessorServiceImpl() {
+        this.fileService = FileUtils.getInstance();
     }
-
+    
     /**
-     * Creates a new DirectoryProcessor with the specified file service.
+     * Constructs a new DirectoryProcessorServiceImpl with a specified file service.
+     * This constructor is primarily for testing purposes, allowing dependency injection.
      * 
      * @param fileService The file service to use
      */
-    public DirectoryProcessor(FileService fileService) {
+    public DirectoryProcessorServiceImpl(FileService fileService) {
         this.fileService = fileService;
     }
 
@@ -71,20 +46,9 @@ public class DirectoryProcessor implements DirectoryProcessorService {
         
         try {
             validateDirectory(sourceDir);
-            ProcessingStats stats = new ProcessingStats(sourceDir);
-            String content = processDirectoryContent(sourceDir, 0, stats);
-            
-            if (!containsCodeFiles(content)) {
-                return resultBuilder
-                    .withSuccess(false)
-                    .withErrorMessage("No code files found in directory")
-                    .build();
-            }
-            
-            // Add processing summary
-            content = addProcessingSummary(content, stats);
-            
+            String content = processDirectoryContent(sourceDir, 0);
             String outputPath = determineOutputPath(sourceDir);
+            
             fileService.writeFileContent(Path.of(outputPath), content);
             
             return resultBuilder
@@ -94,12 +58,30 @@ public class DirectoryProcessor implements DirectoryProcessorService {
                 .build();
                 
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Error processing directory: " + sourceDir, e);
             return resultBuilder
                 .withErrorMessage("Error processing directory: " + e.getMessage())
                 .withSuccess(false)
                 .build();
         }
+    }
+    
+    @Override
+    public int countCodeFiles(Path dir, int maxFiles) throws IOException {
+        if (!Files.isDirectory(dir)) {
+            return 0;
+        }
+        
+        int count = 0;
+        try (var paths = Files.walk(dir)) {
+            List<Path> files = paths.filter(Files::isRegularFile)
+                                    .filter(fileService::isCodeFile)
+                                    .limit(maxFiles + 1)
+                                    .collect(Collectors.toList());
+            
+            count = files.size();
+        }
+        
+        return Math.min(count, maxFiles);
     }
 
     /**
@@ -109,7 +91,6 @@ public class DirectoryProcessor implements DirectoryProcessorService {
      */
     private void validateDirectory(Path dir) throws IOException {
         if (!Files.isDirectory(dir)) {
-            LOGGER.log(Level.WARNING, "Path is not a directory: {0}", dir);
             throw new IOException("Not a directory: " + dir);
         }
     }
@@ -130,7 +111,12 @@ public class DirectoryProcessor implements DirectoryProcessorService {
      * @return String containing the processed content
      * @throws IOException if an error occurs during processing
      */
-    private String processDirectoryContent(Path dir, int depth, ProcessingStats stats) throws IOException {
+    private String processDirectoryContent(Path dir, int depth) throws IOException {
+        // Skip processing if we've gone too deep
+        if (depth > FileProcessingConfig.MAX_DIRECTORY_DEPTH) {
+            return "";
+        }
+        
         StringBuilder content = new StringBuilder();
         String indent = "  ".repeat(depth);
 
@@ -142,21 +128,13 @@ public class DirectoryProcessor implements DirectoryProcessorService {
         
         for (Path path : sortedPaths) {
             if (isProcessableDirectory(path)) {
-                if (depth < FileProcessingConfig.MAX_DIRECTORY_DEPTH) {
-                    String subDirContent = processDirectoryContent(path, depth + 1, stats);
-                    // Only add directory if it contains code files
-                    if (containsCodeFiles(subDirContent)) {
-                        content.append(subDirContent);
-                    }
+                String subDirContent = processDirectoryContent(path, depth + 1);
+                // Only add directory if it contains code files
+                if (containsCodeFiles(subDirContent)) {
+                    content.append(subDirContent);
                 }
             } else if (fileService.isCodeFile(path)) {
-                if (stats.getTotalFilesProcessed() < FileProcessingConfig.MAX_TOTAL_FILES) {
-                    content.append(processFile(path, depth + 1));
-                    stats.incrementFilesProcessed();
-                }
-            }
-            if (sortedPaths.indexOf(path) >= FileProcessingConfig.MAX_FILES_PER_DIRECTORY - 1) {
-                break;
+                content.append(processFile(path, depth + 1));
             }
         }
 
@@ -229,55 +207,5 @@ public class DirectoryProcessor implements DirectoryProcessorService {
               .append(FILE_SEPARATOR);
 
         return content.toString();
-    }
-    
-    /**
-     * Adds a summary of the processing to the content.
-     * 
-     * @param content The processed content
-     * @param sourceDir The source directory
-     * @return The content with summary added
-     */
-    private String addProcessingSummary(String content, ProcessingStats stats) {
-        StringBuilder summary = new StringBuilder();
-        summary.append("=".repeat(80)).append(LINE_SEPARATOR);
-        summary.append("CODE TRANSFORMATION SUMMARY").append(LINE_SEPARATOR);
-        summary.append("=".repeat(80)).append(LINE_SEPARATOR);
-        summary.append("Source Directory: ").append(stats.getSourceDir()).append(LINE_SEPARATOR);
-        summary.append("Files Processed: ").append(stats.getTotalFilesProcessed()).append(LINE_SEPARATOR);
-        
-        if (stats.getTotalFilesProcessed() >= FileProcessingConfig.MAX_TOTAL_FILES) {
-            summary.append("NOTE: File limit reached (").append(FileProcessingConfig.MAX_TOTAL_FILES)
-                   .append(" files). Some files may have been skipped.").append(LINE_SEPARATOR);
-        }
-        
-        summary.append("=".repeat(80)).append(LINE_SEPARATOR);
-        summary.append(LINE_SEPARATOR).append(LINE_SEPARATOR);
-        
-        return summary.toString() + content;
-    }
-
-    @Override
-    public int countCodeFiles(Path dir, int maxFiles) throws IOException {
-        if (!Files.isDirectory(dir)) {
-            return 0;
-        }
-        
-        int count = 0;
-        try (var stream = Files.list(dir).sorted()) {
-            for (Path path : stream.collect(Collectors.toList())) {
-                if (Files.isDirectory(path) && fileService.shouldProcessDirectory(path)) {
-                    count += countCodeFiles(path, maxFiles - count);
-                } else if (fileService.isCodeFile(path)) {
-                    count++;
-                }
-                
-                if (count >= maxFiles) {
-                    break;
-                }
-            }
-        }
-        
-        return count;
     }
 }

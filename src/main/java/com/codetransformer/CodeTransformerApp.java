@@ -1,5 +1,7 @@
 package com.codetransformer;
 
+import com.codetransformer.service.DirectoryProcessorService;
+import com.codetransformer.service.DirectoryProcessorServiceImpl;
 import com.codetransformer.ui.MainWindow;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -29,7 +31,11 @@ public class CodeTransformerApp {
                 LOGGER.log(Level.WARNING, "Could not set system look and feel", e);
             }
 
-            new MainWindow().setVisible(true);
+            // Initialize the directory processor service
+            DirectoryProcessorService processor = new DirectoryProcessorServiceImpl();
+            
+            // Pass the processor to the MainWindow
+            new MainWindow(processor).setVisible(true);
         });
     }
 }

@@ -2,6 +2,9 @@ package com.codetransformer.ui;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Constants for UI components.
@@ -46,4 +49,8 @@ public final class UIConstants {
     
     // Resource Paths
     public static final String LOGO_PATH = "/images/logo.jpeg";
-} 
+
+    public static final Set<String> EXCLUDED_DIRS = new HashSet<>(Arrays.asList(
+        ".git", "node_modules", "__pycache__", ".idea", ".vscode"
+    ));
+}

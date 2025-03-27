@@ -1,5 +1,4 @@
 com/codetransformer/util/FileUtils.class
-com/codetransformer/service/DirectoryProcessor.class
 com/codetransformer/ui/MainWindow$6.class
 com/codetransformer/ui/LogoManager.class
 com/codetransformer/CodeTransformerApp.class
@@ -9,15 +8,16 @@ com/codetransformer/util/FileService.class
 com/codetransformer/util/BrowserLauncher$BrowserLaunchResult.class
 com/codetransformer/ui/MainWindow$3.class
 com/codetransformer/ui/UIConstants.class
+com/codetransformer/util/TreeBuilder.class
 com/codetransformer/config/FileProcessingConfig.class
 com/codetransformer/ui/LogoManager$1.class
 com/codetransformer/ui/MainWindow.class
-com/codetransformer/service/DirectoryProcessor$ProcessingStats.class
 com/codetransformer/ui/UIComponentFactory.class
 com/codetransformer/ui/MainWindow$7.class
 com/codetransformer/util/BrowserLauncher.class
 com/codetransformer/model/TransformationResult$Builder.class
 com/codetransformer/ui/MainWindow$5.class
+com/codetransformer/service/DirectoryProcessorServiceImpl.class
 com/codetransformer/util/AIPlatformURLs.class
 com/codetransformer/ui/MainWindow$9.class
 com/codetransformer/ui/UIComponentFactory$1.class

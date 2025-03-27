@@ -11,15 +11,15 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test class for DirectoryProcessor.
+ * Test class for DirectoryProcessorService.
  * Demonstrates proper unit testing practices.
  */
 class DirectoryProcessorTest {
-    private DirectoryProcessor processor;
+    private DirectoryProcessorService processor;
     
     @BeforeEach
     void setUp() {
-        processor = new DirectoryProcessor();
+        processor = new DirectoryProcessorServiceImpl();
     }
 
     @Test

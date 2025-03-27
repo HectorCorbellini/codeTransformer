@@ -2,11 +2,8 @@ package com.codetransformer.ui;
 
 import com.codetransformer.config.FileProcessingConfig;
 import com.codetransformer.model.TransformationResult;
-import com.codetransformer.service.DirectoryProcessor;
+import com.codetransformer.service.DirectoryProcessorService;
 import com.codetransformer.util.AIPlatformURLs;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import com.codetransformer.util.BrowserLauncher;
 
 import javax.swing.*;
@@ -22,6 +19,7 @@ import java.awt.dnd.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
@@ -32,6 +30,7 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Main window of the application.
@@ -39,28 +38,7 @@ import java.util.logging.Logger;
  * Implements the user interface for the Code Transformer application.
  */
 public class MainWindow extends JFrame {
-    // UI Colors - grouped by purpose for better organization
-    private static final Color BACKGROUND_COLOR = new Color(220, 220, 220);  // More gray background
-    private static final Color PRIMARY_COLOR = new Color(70, 130, 180);
-    private static final Color SUCCESS_COLOR = new Color(46, 139, 87);
-    // ERROR_COLOR is now used directly in the HTML color code (#B22222)
-    private static final Color TEXT_COLOR = new Color(50, 50, 50);
-    private static final Color HELP_COLOR = new Color(100, 149, 237);
-    private static final Color AI_COLOR = new Color(38, 166, 91);
-    
-    // Title gradient colors - Dark Green palette
-    private static final Color TITLE_COLOR_1 = new Color(0, 100, 0);      // Dark Green
-    private static final Color TITLE_COLOR_2 = new Color(34, 139, 34);    // Forest Green
-    private static final Color TITLE_COLOR_3 = new Color(46, 139, 87);    // Sea Green
-    private static final Color TITLE_COLOR_4 = new Color(60, 179, 113);   // Medium Sea Green
-    private static final Color TITLE_SHADOW_COLOR = new Color(40, 40, 40, 100);
-    
-    // UI Fonts
-    private static final Font HEADER_FONT = new Font("Arial", Font.BOLD, 14);
-    private static final Font NORMAL_FONT = new Font("Arial", Font.PLAIN, 14);
-    
-    // Logo path
-    private static final String LOGO_PATH = "/images/logo.jpeg";
+    // Logo path is defined in UIConstants
     private BufferedImage logoImage;
     
 
@@ -74,16 +52,16 @@ public class MainWindow extends JFrame {
     private JButton aiAnalysisButton;
     
     // Service dependencies
-    private DirectoryProcessor directoryProcessor;
+    private DirectoryProcessorService directoryProcessor;
     
     /**
      * Creates a new MainWindow with the specified directory processor.
      * 
      * @param directoryProcessor The directory processor to use
      */
-    public MainWindow() {
+    public MainWindow(DirectoryProcessorService directoryProcessor) {
         super("Code Transformer");
-        this.directoryProcessor = new DirectoryProcessor();
+        this.directoryProcessor = directoryProcessor;
         loadLogo();
         initializeUI();
         setupDropTarget();
@@ -97,7 +75,7 @@ public class MainWindow extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 500); 
         setLocationRelativeTo(null);
-        setBackground(BACKGROUND_COLOR);
+        setBackground(UIConstants.BACKGROUND_COLOR);
 
         // Create main panel with border layout
         JPanel mainPanel = createMainPanel();
@@ -113,7 +91,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBackground(BACKGROUND_COLOR);
+        mainPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // Add artistic title
@@ -138,7 +116,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createCenterPanel() {
         JPanel centerPanel = new JPanel(new BorderLayout(10, 15));
-        centerPanel.setBackground(BACKGROUND_COLOR);
+        centerPanel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         // Create input panel
         JPanel inputPanel = createInputPanel();
@@ -178,17 +156,17 @@ public class MainWindow extends JFrame {
                 
                 // Create gradient background
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, TITLE_COLOR_1,
-                    w, h, TITLE_COLOR_2
+                    0, 0, UIConstants.TITLE_COLOR_1,
+                    w, h, UIConstants.TITLE_COLOR_2
                 );
                 g2d.setPaint(gradient);
                 g2d.fillRoundRect(0, 0, w, h, 15, 15);
                 
                 // Add decorative elements
-                g2d.setColor(TITLE_COLOR_3);
+                g2d.setColor(UIConstants.TITLE_COLOR_3);
                 g2d.fillRoundRect(10, h - 15, w - 20, 8, 5, 5);
                 
-                g2d.setColor(TITLE_COLOR_4);
+                g2d.setColor(UIConstants.TITLE_COLOR_4);
                 g2d.fillRoundRect(10, 7, w - 20, 8, 5, 5);
                 
                 // Draw text with shadow
@@ -203,7 +181,7 @@ public class MainWindow extends JFrame {
                 int textY = (h + fm.getAscent() - fm.getDescent()) / 2;
                 
                 // Draw shadow
-                g2d.setColor(TITLE_SHADOW_COLOR);
+                g2d.setColor(UIConstants.TITLE_SHADOW_COLOR);
                 g2d.drawString(title, textX + 2, textY + 2);
                 
                 // Draw text with gradient - lighter green to white
@@ -223,7 +201,7 @@ public class MainWindow extends JFrame {
             }
         };
         
-        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
         panel.setBorder(new EmptyBorder(0, 0, 15, 0));
 
         // Create logo panel
@@ -286,7 +264,7 @@ public class MainWindow extends JFrame {
     private void loadLogo() {
         try {
             // Load the image from resources
-            logoImage = ImageIO.read(getClass().getResourceAsStream(LOGO_PATH));
+            logoImage = ImageIO.read(getClass().getResourceAsStream(UIConstants.LOGO_PATH));
             if (logoImage == null) {
                 LOGGER.warning("Failed to load logo: Image is null");
             }
@@ -297,12 +275,12 @@ public class MainWindow extends JFrame {
 
     private JPanel createInputPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         // Create header
         JLabel headerLabel = new JLabel("Select Source Directory");
-        headerLabel.setFont(HEADER_FONT);
-        headerLabel.setForeground(TEXT_COLOR);
+        headerLabel.setFont(UIConstants.HEADER_FONT);
+        headerLabel.setForeground(UIConstants.TEXT_COLOR);
         panel.add(headerLabel, BorderLayout.NORTH);
 
         // Create input field panel
@@ -319,7 +297,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createInputFieldPanel() {
         JPanel inputFieldPanel = new JPanel(new BorderLayout(5, 0));
-        inputFieldPanel.setBackground(BACKGROUND_COLOR);
+        inputFieldPanel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         directoryField = createDirectoryField();
         setupDirectoryFieldDropTarget();
@@ -340,11 +318,11 @@ public class MainWindow extends JFrame {
      */
     private JTextField createDirectoryField() {
         JTextField field = new JTextField("Drag and drop a folder here");
-        field.setFont(NORMAL_FONT);
+        field.setFont(UIConstants.NORMAL_FONT);
         field.setEditable(false);
         field.setBackground(Color.WHITE);
         field.setBorder(new CompoundBorder(
-            new LineBorder(PRIMARY_COLOR, 1),
+            new LineBorder(UIConstants.PRIMARY_COLOR, 1),
             new EmptyBorder(8, 10, 8, 10)
         ));
         field.setForeground(Color.GRAY);
@@ -361,7 +339,7 @@ public class MainWindow extends JFrame {
             public void dragEnter(DropTargetDragEvent dtde) {
                 if (isDragAcceptable(dtde)) {
                     directoryField.setBorder(new CompoundBorder(
-                        new LineBorder(SUCCESS_COLOR, 2),
+                        new LineBorder(UIConstants.SUCCESS_COLOR, 2),
                         new EmptyBorder(7, 9, 7, 9)
                     ));
                 }
@@ -370,7 +348,7 @@ public class MainWindow extends JFrame {
             @Override
             public void dragExit(DropTargetEvent dte) {
                 directoryField.setBorder(new CompoundBorder(
-                    new LineBorder(PRIMARY_COLOR, 1),
+                    new LineBorder(UIConstants.PRIMARY_COLOR, 1),
                     new EmptyBorder(8, 10, 8, 10)
                 ));
             }
@@ -405,7 +383,7 @@ public class MainWindow extends JFrame {
             File file = droppedFiles.get(0);
             if (file.isDirectory()) {
                 directoryField.setText(file.getAbsolutePath());
-                directoryField.setForeground(TEXT_COLOR);
+                directoryField.setForeground(UIConstants.TEXT_COLOR);
                 updateButtonStates();
             } else {
                 showError("Please drop a folder, not a file.");
@@ -418,7 +396,7 @@ public class MainWindow extends JFrame {
      */
     private void resetDirectoryFieldBorder() {
         directoryField.setBorder(new CompoundBorder(
-            new LineBorder(PRIMARY_COLOR, 1),
+            new LineBorder(UIConstants.PRIMARY_COLOR, 1),
             new EmptyBorder(8, 10, 8, 10)
         ));
     }
@@ -430,11 +408,11 @@ public class MainWindow extends JFrame {
      */
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         JLabel statusLabel = new JLabel("Processing Status");
-        statusLabel.setFont(HEADER_FONT);
-        statusLabel.setForeground(TEXT_COLOR);
+        statusLabel.setFont(UIConstants.HEADER_FONT);
+        statusLabel.setForeground(UIConstants.TEXT_COLOR);
         panel.add(statusLabel, BorderLayout.NORTH);
 
         statusArea = createStatusTextPane();
@@ -452,10 +430,10 @@ public class MainWindow extends JFrame {
     private JTextPane createStatusTextPane() {
         JTextPane area = new JTextPane();
         area.setEditable(false);
-        area.setFont(NORMAL_FONT);
+        area.setFont(UIConstants.NORMAL_FONT);
         area.setContentType("text/html");
         area.setBorder(new CompoundBorder(
-            new LineBorder(PRIMARY_COLOR.brighter(), 1),
+            new LineBorder(UIConstants.PRIMARY_COLOR.brighter(), 1),
             new EmptyBorder(5, 5, 5, 5)
         ));
         area.setBackground(Color.WHITE);
@@ -502,7 +480,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 0));
-        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
         
         // Left side - Help button
         JPanel leftPanel = createLeftButtonPanel();
@@ -522,11 +500,11 @@ public class MainWindow extends JFrame {
      */
     private JPanel createLeftButtonPanel() {
         helpButton = createStyledButton("Help");
-        helpButton.setBackground(HELP_COLOR);
+        helpButton.setBackground(UIConstants.HELP_COLOR);
         helpButton.addActionListener(e -> showHelpDialog());
         
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftPanel.setBackground(BACKGROUND_COLOR);
+        leftPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         leftPanel.add(helpButton);
         
         return leftPanel;
@@ -539,7 +517,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createRightButtonPanel() {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        rightPanel.setBackground(BACKGROUND_COLOR);
+        rightPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         
         transformButton = createStyledButton("Transform Code");
         transformButton.addActionListener(e -> handleTransformCode());
@@ -563,10 +541,10 @@ public class MainWindow extends JFrame {
      */
     private JButton createAIAnalysisButton() {
         JButton button = createStyledButton("Analyze with AI");
-        button.setBackground(AI_COLOR);
+        button.setBackground(UIConstants.AI_COLOR);
         button.setForeground(Color.WHITE);
         button.setBorder(new CompoundBorder(
-            new LineBorder(AI_COLOR, 1),
+            new LineBorder(UIConstants.AI_COLOR, 1),
             new EmptyBorder(8, 15, 8, 15)
         ));
         button.addActionListener(e -> showAIPlatformSelector());
@@ -580,7 +558,7 @@ public class MainWindow extends JFrame {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setBackground(AI_COLOR);
+                button.setBackground(UIConstants.AI_COLOR);
             }
         });
         
@@ -595,13 +573,13 @@ public class MainWindow extends JFrame {
      */
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(HEADER_FONT);
+        button.setFont(UIConstants.HEADER_FONT);
         button.setFocusPainted(false);
         button.setBorder(new CompoundBorder(
-            new LineBorder(PRIMARY_COLOR, 1),
+            new LineBorder(UIConstants.PRIMARY_COLOR, 1),
             new EmptyBorder(8, 15, 8, 15)
         ));
-        button.setBackground(PRIMARY_COLOR);
+        button.setBackground(UIConstants.PRIMARY_COLOR);
         button.setForeground(Color.WHITE);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
@@ -614,7 +592,7 @@ public class MainWindow extends JFrame {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setBackground(PRIMARY_COLOR);
+                button.setBackground(UIConstants.PRIMARY_COLOR);
             }
         });
         
@@ -636,7 +614,7 @@ public class MainWindow extends JFrame {
 
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             directoryField.setText(chooser.getSelectedFile().getAbsolutePath());
-            directoryField.setForeground(TEXT_COLOR);
+            directoryField.setForeground(UIConstants.TEXT_COLOR);
             updateButtonStates();
             showInfo("Directory selected successfully! Click 'Transform Code' to process.");
         }
@@ -722,7 +700,7 @@ public class MainWindow extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
         
         // Add warning icon
         JLabel iconLabel = new JLabel(UIManager.getIcon("OptionPane.warningIcon"));
@@ -745,7 +723,7 @@ public class MainWindow extends JFrame {
                          "Please select a smaller codebase or a specific subdirectory " +
                          "with fewer files for better results.</div></html>";
         JLabel messageLabel = new JLabel(message);
-        messageLabel.setFont(NORMAL_FONT);
+        messageLabel.setFont(UIConstants.NORMAL_FONT);
         messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(messageLabel);
         panel.add(Box.createVerticalStrut(20));
@@ -779,8 +757,8 @@ public class MainWindow extends JFrame {
         new SwingWorker<TransformationResult, Void>() {
             @Override
             protected TransformationResult doInBackground() {
-                DirectoryProcessor processor = new DirectoryProcessor();
-                return processor.processDirectory(Path.of(directoryField.getText()));
+                // Using the already injected processor
+                return directoryProcessor.processDirectory(Path.of(directoryField.getText()));
             }
 
             @Override
@@ -1049,11 +1027,11 @@ public class MainWindow extends JFrame {
         JPanel platformPanel = new JPanel();
         platformPanel.setLayout(new BoxLayout(platformPanel, BoxLayout.Y_AXIS));
         platformPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        platformPanel.setBackground(BACKGROUND_COLOR);
+        platformPanel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         // Add a description label
         JLabel descLabel = new JLabel("Select an AI platform to analyze your code:");
-        descLabel.setFont(HEADER_FONT);
+        descLabel.setFont(UIConstants.HEADER_FONT);
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         platformPanel.add(descLabel);
         platformPanel.add(Box.createVerticalStrut(20));
@@ -1070,16 +1048,20 @@ public class MainWindow extends JFrame {
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         cancelButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        buttonPanel.add(cancelButton);
         platformPanel.add(Box.createVerticalStrut(20));
-        platformPanel.add(cancelButton);
-
+        platformPanel.add(buttonPanel);
+        
         dialog.add(platformPanel, BorderLayout.CENTER);
         dialog.setVisible(true);
     }
 
     private JButton createPlatformButton(String platform, JDialog parentDialog) {
         JButton button = new JButton(platform);
-        button.setFont(HEADER_FONT);
+        button.setFont(UIConstants.HEADER_FONT);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         button.setMaximumSize(new Dimension(200, 40));
         button.setPreferredSize(new Dimension(200, 40));
@@ -1099,7 +1081,7 @@ public class MainWindow extends JFrame {
                 button.setBackground(new Color(0, 168, 150));
                 break;
             default:
-                button.setBackground(PRIMARY_COLOR);
+                button.setBackground(UIConstants.PRIMARY_COLOR);
         }
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
@@ -1214,8 +1196,6 @@ public class MainWindow extends JFrame {
      * @param platformName The name of the platform
      */
     private void showUrlDialog(URI url, String platformName) {
-        String urlString = url.toString();
-        
         // Create components
         JDialog dialog = new JDialog(this, platformName + " URL", true);
         dialog.setLayout(new BorderLayout(10, 10));
@@ -1223,14 +1203,16 @@ public class MainWindow extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
+        panel.setBackground(UIConstants.BACKGROUND_COLOR);
+
+        // Add a description label
         JLabel messageLabel = new JLabel("Click the link below to open " + platformName + ":");
         messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         JEditorPane linkPane = new JEditorPane();
         linkPane.setContentType("text/html");
         linkPane.setEditable(false);
-        linkPane.setText("<html><center><a href='" + urlString + "'>" + urlString + "</a></center></html>");
+        linkPane.setText("<html><center><a href='" + url + "'>" + url + "</a></center></html>");
         linkPane.setBackground(panel.getBackground());
         
         // Add hyperlink listener
@@ -1248,7 +1230,7 @@ public class MainWindow extends JFrame {
         JButton copyButton = new JButton("Copy URL");
         copyButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         copyButton.addActionListener(e -> {
-            StringSelection selection = new StringSelection(urlString);
+            StringSelection selection = new StringSelection(url.toString());
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
             clipboard.setContents(selection, selection);
             showSuccess("URL copied to clipboard!");
@@ -1345,7 +1327,7 @@ public class MainWindow extends JFrame {
     private JPanel createHelpDialogContentPanel() {
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        contentPanel.setBackground(BACKGROUND_COLOR);
+        contentPanel.setBackground(UIConstants.BACKGROUND_COLOR);
 
         // Help content
         JTextPane helpContent = createHelpTextPane();
@@ -1358,7 +1340,7 @@ public class MainWindow extends JFrame {
         closeButton.addActionListener(e -> ((JDialog)SwingUtilities.getWindowAncestor(contentPanel)).dispose());
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(BACKGROUND_COLOR);
+        buttonPanel.setBackground(UIConstants.BACKGROUND_COLOR);
         buttonPanel.add(closeButton);
         contentPanel.add(buttonPanel, BorderLayout.SOUTH);
         
@@ -1374,9 +1356,9 @@ public class MainWindow extends JFrame {
         JTextPane helpContent = new JTextPane();
         helpContent.setContentType("text/html");
         helpContent.setEditable(false);
-        helpContent.setBackground(BACKGROUND_COLOR);
+        helpContent.setBackground(UIConstants.BACKGROUND_COLOR);
         helpContent.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        helpContent.setFont(NORMAL_FONT);
+        helpContent.setFont(UIConstants.NORMAL_FONT);
         
         String helpText = getHelpDialogHtmlContent();
         helpContent.setText(helpText);

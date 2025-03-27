@@ -44,11 +44,12 @@ The primary UI class that handles user interactions and displays results. It man
 - Results display and clipboard operations
 - AI platform integration
 
-#### DirectoryProcessor
-Handles the recursive processing of directories, including:
+#### DirectoryProcessorService
+Interface and implementation that handle the recursive processing of directories, including:
 - File type detection and filtering
 - Content extraction
 - Output formatting
+- Error handling and validation
 
 #### AIPlatformURLs
 Utility class for generating URLs for various AI platforms.
@@ -92,7 +93,8 @@ src/
 │   │           ├── model/
 │   │           │   └── TransformationResult.java
 │   │           ├── service/
-│   │           │   └── DirectoryProcessor.java
+│   │           │   ├── DirectoryProcessorService.java
+│   │           │   └── DirectoryProcessorServiceImpl.java
 │   │           ├── ui/
 │   │           │   └── MainWindow.java
 │   │           └── util/
@@ -110,11 +112,15 @@ src/
 ## Implementation Details
 
 ### File Processing
-The application uses a recursive approach to process directories:
-1. Scan the selected directory for all files
-2. Filter files based on extensions and content type
-3. Read and format each file's content
-4. Combine all content with appropriate headers and separators
+The application uses a service-based approach with clear separation of concerns:
+1. The DirectoryProcessorService interface defines the contract for directory processing
+2. DirectoryProcessorServiceImpl implements the processing logic:
+   - Validates input directories
+   - Recursively scans for code files
+   - Filters based on extensions and content type
+   - Reads and formats each file's content
+   - Combines content with appropriate headers and separators
+   - Handles errors and provides detailed feedback
 
 ### Browser Integration
 The application uses a multi-layered approach for browser launching:
