@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Code Transformer
+Comment=Transform and analyze code with AI
+Exec=/root/CascadeProjects/CODES_JOIN/CodesJOINER-Java/start-code-transformer.sh
+Icon=java
+Terminal=false
+Type=Application
+Categories=Development;Utility;
